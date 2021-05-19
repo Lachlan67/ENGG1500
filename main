@@ -1,0 +1,210 @@
+from motor import Motor
+import ultrasonic
+from time import sleep
+from pyb import Servo, Pin, ADC
+from encoder import Encoder
+print("Hello, world!")  # Print a welcome message on reset
+
+# Create encoder object
+ENC_L = "D2"
+ENC_R = "D3"
+enc = Encoder(ENC_L, ENC_R)
+
+
+
+ls_LL = ADC(Pin('A1'))
+ls_LR = ADC(Pin('A2'))
+ls_RL = ADC(Pin('A3'))
+ls_RR = ADC(Pin('A4'))
+motor_left = Motor("left", "D6", "D7", "D4")
+motor_right = Motor("right", "D8", "D9", "D5")
+
+
+
+TRIG = "D13"
+ECHO = "D12"
+ultrasonic_sensor = ultrasonic.HCSR04(TRIG, ECHO)
+servo = Servo(1)
+while False:
+    R_PWM = 68
+    L_PWM = 68
+    motor_right.set_forwards()
+    motor_left.set_forwards()
+    motor_right.duty(R_PWM)
+    motor_left.duty(L_PWM)
+
+    if ls_LR.read() > (ls_RL.read() + 50):
+        L_PWM = 0
+        R_PWM = 70
+    motor_right.duty(R_PWM)
+    motor_left.duty(L_PWM)
+    if ls_RL.read() > (ls_LR.read() + 50):
+        L_PWM = 68
+        R_PWM = 0
+    motor_right.duty(R_PWM)
+    motor_left.duty(L_PWM)
+    if ls_LL.read() > ((ls_LR.read() + ls_RL.read() + 50) / 2):
+        L_PWM = 0
+        R_PWM = 70
+    motor_right.duty(R_PWM)
+    motor_left.duty(L_PWM)
+    if ls_RR.read() > ((ls_LR.read() + ls_RL.read() + 50) / 2):
+        L_PWM = 68
+        R_PWM = 0
+    motor_right.duty(R_PWM)
+    motor_left.duty(L_PWM)
+    sleep(0.1)
+
+
+while 0:
+    enc_desired_counts = 37
+    dist = ultrasonic_sensor.distance_mm()
+    motor_left.set_forwards()
+    motor_right.set_forwards()
+    if dist < 180:
+        enc.clear_count()
+        motor_right.duty(0)
+        motor_left.duty(0)
+        sleep(1)
+        while enc.get_right() < enc_desired_counts:
+            motor_right.duty(68)
+            motor_left.duty(0)
+
+    else:
+        motor_right.duty(66)
+        motor_left.duty(68)
+    sleep(0.1)
+
+
+
+while True:
+    enc_desired_counts = 43.8
+    motor_left.set_forwards()   # Set the left motor to run forwards
+    motor_right.set_forwards()  # Set the right motor to run forwards
+    enc.clear_count()  # Reset the encoder to zero
+
+    # Drive until average counts exceed a value
+    while (enc.get_left() + enc.get_right())/2 < enc_desired_counts:
+        motor_left.duty(68)
+        motor_right.duty(68)
+
+    # Stop the motors for 1s
+    motor_left.duty(0)
+    motor_right.duty(0)
+    sleep(1)
+
+    enc.clear_count()
+    enc_desired_counts = 37
+    while enc.get_right() < enc_desired_counts:
+        motor_right.duty(68)
+        motor_left.duty(0)
+    enc.clear_count()
+    enc_desired_counts = 102.2
+    while (enc.get_left() + enc.get_right())/2 < enc_desired_counts:
+        motor_left.duty(70)
+        motor_right.duty(68)
+
+    motor_left.duty(0)
+    motor_right.duty(0)
+    sleep(1)
+
+
+
+
+
+
+# Set True to run code for IR sensor. Runs forward on white (0) and stops on black (1).
+
+
+# These statements make the code more readable.
+# Instead of a pin number "D13" or "D12" we can now write "TRIG" or "ECHO"
+
+
+TRIG = "D13"
+ECHO = "D12"
+ultrasonic_sensor = ultrasonic.HCSR04(TRIG, ECHO)
+
+# Set True to run code for US sensor.
+
+while 0:
+    dist = ultrasonic_sensor.distance_mm()
+    if dist < 200:
+        # The code within this if-statement only gets executed
+        # if the distance measured is less than 200 mm
+        print("Distance = {:6.2f} [mm]".format(dist))
+    sleep(0.1)
+
+US_servo = Servo(1)
+
+dist = ultrasonic_sensor.distance_mm()
+while 0:
+    for desired_angle in range(-70, 70, +1):
+        US_servo.angle(desired_angle)
+        sleep(0.01)
+        if dist <= 200:
+            motor_left.duty(0)
+            motor_right.duty(0)
+            sleep(1)
+
+            # Clear encoder count and set direction pins for backwards
+            enc.clear_count()
+            motor_left.set_backwards()
+            motor_right.set_backwards()
+
+            # Drive until average counts exceed a value
+            while (enc.get_left() + enc.get_right()) / 2 < enc_desired_counts:
+                motor_left.duty(75)  # Set the left motor to 80% pwm backwards
+                motor_right.duty(75)  # Set the left motor to 80% pwm backwards
+
+            sleep(1)
+
+            motor_left.duty(0)
+            motor_right.duty(0)
+            sleep(1)
+        else:
+            motor_left.duty(65)
+            motor_right.duty(65)
+    sleep(0.01)
+    for desired_angle in range(70, -70, -1):
+        US_servo.angle(desired_angle)
+        sleep(0.01)
+        if dist <= 200:
+            motor_left.duty(0)
+            motor_right.duty(0)
+            sleep(1)
+
+            # Clear encoder count and set direction pins for backwards
+            enc.clear_count()
+            motor_left.set_backwards()
+            motor_right.set_backwards()
+
+            # Drive until average counts exceed a value
+            while (enc.get_left() + enc.get_right()) / 2 < enc_desired_counts:
+                motor_left.duty(75)  # Set the left motor to 80% pwm backwards
+                motor_right.duty(75)  # Set the left motor to 80% pwm backwards
+
+            sleep(1)
+
+            motor_left.duty(0)
+            motor_right.duty(0)
+            sleep(1)
+        else:
+            motor_left.duty(65)
+            motor_right.duty(65)
+    sleep(0.01)
+
+
+
+
+US_servo = Servo(1)
+while 0:
+    for desired_angle in range(-70, 70, +1):
+        US_servo.angle(desired_angle)
+        sleep(0.01)
+
+    for desired_angle in range(70, -70, -1):
+        US_servo.angle(desired_angle)
+        sleep(0.01)
+ #servo on A1
+# US holding servo code. Starts at -90 degrees (right of car) and sweeps to 90 degrees (left of
+# car) then back again.
